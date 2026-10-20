@@ -140,6 +140,9 @@ var GROUPS=[
 {title:'2 · Nakládka (PUP)',sub:'PUP = místo, kde se zboží nakládá.',cards:[
 {t:'Příjezd na nakládku',hint:'Přijeď nejdřív 30 min a nejpozději 15 min před časem nakládky.',msg:'Arrival PUP at {T}',src:'i'},
 {t:'Vozidlo je na místě',hint:'Až najdeš kamion/dodávku. Přidej jeho fotku.',msg:'The Truck/Van is here',src:'i'},
+{t:'Kamion tam není',hint:'Kamion ještě nedorazil. Doplň fotkou.',msg:'Truck is not here.',src:'c'},
+{t:'Kamion tam je, ale nenakládá se',hint:'Kamion je v areálu a čeká na nakládku. Doplň fotkou.',msg:'Truck is already here, but he is waiting for loading.',src:'c'},
+{t:'Kamion tam je a nakládá se',hint:'Kamion se právě nakládá. Doplň fotkou.',msg:'Truck is being loaded.',src:'c'},
 {t:'Začíná nakládka',hint:'Přidej fotku kamionu na rampě.',msg:'START LOADING',src:'i'},
 {t:'Odjezd z nakládky',hint:'Až máš vyfocené vozidlo, plomby a CMR.',msg:'Departure PUP at {T}',src:'i'}
 ]},
@@ -189,7 +192,7 @@ return html?'<mark>'+esc(v)+'</mark>':v;
 });
 }
 var el=document.createElement('div');el.className='card';
-var tag='<span class="src'+(card.src==='d'?' draft':'')+'">'+(card.src==='d'?'NÁVRH':'Z INSTRUKCÍ')+'</span>';
+var tag='<span class="src'+(card.src==='d'||card.src==='c'?' draft':'')+'">'+(card.src==='d'?'NÁVRH':card.src==='c'?'OD KOLEGY':'Z INSTRUKCÍ')+'</span>';
 el.innerHTML='<h3>'+esc(card.t)+'</h3><p class="hint">'+esc(card.hint||'')+'</p>'+tag;
 var fwrap=null;
 if(card.fields){
