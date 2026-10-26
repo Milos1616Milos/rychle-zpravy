@@ -392,6 +392,49 @@ firstGroup.querySelector('.cards').appendChild(det);
 var gl=document.createElement('section');gl.className='group';
 gl.innerHTML='<h2>Vysvětlivky</h2><div class="card"><p class="gloss"><span><b>TW</b> = aplikace na zápis času a km</span><span><b>PUP</b> = nakládka</span><span><b>DOP</b> = vykládka</span><span><b>CMR</b> = nákladní list</span><span><b>seal</b> = plomba, pečeť na dveřích nákladu</span><span><b>plate</b> = SPZ</span><span><b>Esoc</b> = osoba nebo tým, kterého ve skupině označuješ při problému</span><span><b>Reason</b> = důvod</span><span><b>Arrival / Departure</b> = příjezd / odjezd</span><span><b>Start / Re-start</b> = začátek / znovu rozjezd</span></p></div>';
 app.appendChild(gl);
+
+/* Zprávy pro řidiče */
+var DRV={title:'7 · Zprávy pro řidiče',sub:'Hotové anglické zprávy pro řidiče kamionu nebo dodávky. Pod názvem vidíš, co znamenají. Texty jsou NÁVRH, ne slovo od slova z instrukcí.',cards:[
+{t:'Představení',hint:'Význam: Dobrý den, jsme doprovod Cargo Security Escort a budeme vás na této cestě doprovázet. Když bude potřeba zastavit z vaší nebo z naší strany, dáme si vědět přes SMS nebo WhatsApp.',msg:'Hello, we are Cargo Security Escort. We will accompany you on this trip. If you need to stop, or if we need to stop, we will let each other know by SMS or WhatsApp.',src:'d'},
+{t:'Čekáme před areálem',hint:'Význam: Dobrý den, jsme Cargo Security Escort. Čekáme na vás před areálem.',msg:'Hello, we are Cargo Security Escort. We are waiting for you in front of the site.',src:'d'},
+{t:'Potřebujeme tankovat',hint:'Význam: Potřebujeme tankovat. Zastavte prosím na čerpací stanici, kterou vám pošleme ve zprávě.',msg:'We need to refuel. Please stop at the petrol station that we will send you in a message.',src:'d'},
+{t:'Střídání řidičů',hint:'Význam: Zastavte prosím. Vystřídáme se a potom můžeme hned pokračovat.',msg:'Please stop. We will change drivers and then we can continue right away.',src:'d'},
+{t:'Kde jste?',hint:'Význam: Napište nám prosím, kde teď jste.',msg:'Please let us know where you are now.',src:'d'},
+{t:'Pošlete polohu',hint:'Význam: Pošlete nám prosím svou polohu.',msg:'Please send us your location.',src:'d'},
+{t:'Před zastavením nám dejte vědět',hint:'Význam: Prosím, než zastavíte, dejte nám nejdřív vědět.',msg:'Please let us know before you stop.',src:'d'},
+{t:'Zastavte na bezpečném místě',hint:'Význam: Zastavte prosím na nejbližším bezpečném parkovišti.',msg:'Please stop at the next safe parking place.',src:'d'},
+{t:'Počkejte na nás',hint:'Význam: Počkejte prosím na nás, jsme hned za vámi.',msg:'Please wait for us, we are right behind you.',src:'d'},
+{t:'Pošlete foto CMR',hint:'Význam: Pošlete nám prosím fotku CMR (nákladní list, dopravní doklad).',msg:'Please send us a photo of the CMR.',src:'d'},
+{t:'Pošlete foto plomby',hint:'Význam: Pošlete nám prosím fotku čísla plomby.',msg:'Please send us a photo of the seal number.',src:'d'},
+{t:'Zavolejte nám',hint:'Význam: Zavolejte nám prosím, až si tuto zprávu přečtete.',msg:'Please call us when you read this message.',src:'d'},
+{t:'Potvrďte zprávu',hint:'Význam: Potvrďte prosím, že jste zprávu dostali.',msg:'Please confirm that you received this message.',src:'d'},
+{t:'Konec cesty',hint:'Význam: Děkujeme, cesta je ukončena. Šťastnou cestu.',msg:'Thank you, the trip is finished. Have a safe journey.',src:'d'}
+]};
+(function(){
+var s=document.createElement('section');s.className='group drv';
+s.innerHTML='<h2>'+esc(DRV.title)+'</h2><p class="sub">'+esc(DRV.sub)+'</p>';
+var c=document.createElement('div');c.className='cards';
+DRV.cards.forEach(function(card){c.appendChild(build(card));});
+s.appendChild(c);app.appendChild(s);
+var st=document.createElement('style');
+st.textContent='.tabs{display:flex;gap:8px;margin:0 0 14px}.tabs button{flex:1;min-height:48px;padding:0 10px;border-radius:10px;border:2px solid var(--accent);background:transparent;color:var(--accent);font:700 15px var(--f-body);cursor:pointer}.tabs button[aria-pressed="true"]{background:var(--accent);color:#fff}';
+document.head.appendChild(st);
+var bar=document.createElement('div');bar.className='tabs';
+var bm=document.createElement('button');bm.type='button';bm.textContent='Zprávy do skupiny';
+var bd=document.createElement('button');bd.type='button';bd.textContent='Zprávy pro řidiče';
+bar.appendChild(bm);bar.appendChild(bd);
+app.parentNode.insertBefore(bar,app);
+function show(m){
+bm.setAttribute('aria-pressed',m==='main'?'true':'false');
+bd.setAttribute('aria-pressed',m==='drv'?'true':'false');
+app.querySelectorAll('.group').forEach(function(g){g.style.display=(g.classList.contains('drv')===(m==='drv'))?'':'none';});
+try{localStorage.setItem('rz_tab',m);}catch(e){}
+}
+bm.addEventListener('click',function(){show('main');window.scrollTo(0,0);});
+bd.addEventListener('click',function(){show('drv');window.scrollTo(0,0);});
+var m0='main';try{m0=localStorage.getItem('rz_tab')==='drv'?'drv':'main';}catch(e){}
+show(m0);
+})();
 })();
 </script>
 </body>
