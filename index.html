@@ -89,6 +89,23 @@ details.card[open] summary{margin-bottom:8px}
 .toast.show{opacity:1}
 @media (min-width:520px){.fields.two{grid-template-columns:1fr 1fr}}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.smart{display:flex;flex-direction:column;gap:10px}
+.smart textarea{font:500 15px var(--f-mono);min-height:120px;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.row>*{min-width:0}
+.grow{flex:1 1 180px}
+.copy.small{min-height:48px;width:auto;padding:0 18px;font-size:16px}
+.filebtn{position:relative;display:inline-flex;align-items:center;min-height:48px;padding:0 16px;border-radius:10px;border:2px solid var(--accent);color:var(--accent);font:700 16px var(--f-body);cursor:pointer}
+.filebtn input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.filebtn:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.demo{margin:0;padding:10px 12px;border-radius:8px;background:var(--draft-bg);color:var(--draft-ink);font-size:14px}
+.status{margin:0;font-size:14px;color:var(--muted);min-height:1.4em}
+.counter{margin:0;font-size:14px;font-weight:600;color:var(--mark-ink)}
+.counter:empty{display:none}
+.fld.chk input{border-color:var(--accent);background:var(--hint-bg)}
+.sure{border-color:var(--accent);color:var(--accent);font-weight:700}
+.copy[disabled]{opacity:.45;cursor:not-allowed}
+.sub-h{margin:8px 0 0;font-size:15px;font-weight:700}
 </style>
 </head>
 <body>
@@ -230,24 +247,145 @@ var c=document.createElement('div');c.className='cards';
 g.cards.forEach(function(card){c.appendChild(build(card));});
 s.appendChild(c);app.appendChild(s);
 });
-/* Tabulka Details */
-var DF=[['Truck company','Firma dopravce'],['Truck brand','Značka kamionu'],['Truck color','Barva kamionu'],['Trailer color','Barva návěsu'],['Truck plate','SPZ kamionu'],['Trailer plate','SPZ návěsu'],['Driver #1','Řidič 1 (jméno)'],['Phone #1','Telefon řidiče 1'],['Driver #2','Řidič 2 (jméno)'],['Phone #2','Telefon řidiče 2'],['Seal #1','Plomba 1 (číslo)'],['Seal #2','Plomba 2 (číslo, může být prázdné)']];
-var det=document.createElement('details');det.className='card';
-det.innerHTML='<summary>Tabulka „Details“ po nakládce</summary><p class="hint">Údaje o vozidle a řidičích. Vyplň, zkopíruj a pošli do skupiny i do TW. Údaje se neukládají, po zavření stránky zmizí.</p><span class="src">Z INSTRUKCÍ</span>';
-var dgrid=document.createElement('div');dgrid.className='fields two';det.appendChild(dgrid);
-var dvals=DF.map(function(){return '';});
-var dpre=document.createElement('pre');dpre.className='pre';
-function dtext(html){return 'Details:\n'+DF.map(function(r,i){var v=dvals[i];return r[0]+': '+(html?(v?'<mark>'+esc(v)+'</mark>':''):v);}).join('\n');}
-DF.forEach(function(r,i){
-var id='d_'+i;var l=document.createElement('label');l.className='fld';l.setAttribute('for',id);
-l.innerHTML='<span>'+esc(r[1])+'<br><i style="font-weight:400">'+esc(r[0])+'</i></span>';
-var inp=document.createElement('input');inp.id=id;inp.type=(r[0].indexOf('Phone')===0)?'tel':'text';inp.autocomplete='off';
-inp.addEventListener('input',function(){dvals[i]=inp.value;dpre.innerHTML=dtext(true);});
-l.appendChild(inp);dgrid.appendChild(l);
+/* Tabulka Details – chytré vyplnění (živá verze) */
+var API_URL='https://n8n.178-105-83-205.sslip.io/webhook/rychle-zpravy-cteni';
+var FIELDS=[['company','Truck company','Firma dopravce'],['brand','Truck brand','Značka kamionu'],['tcolor','Truck color','Barva kamionu'],['rcolor','Trailer color','Barva návěsu'],['tplate','Truck plate','SPZ kamionu'],['rplate','Trailer plate','SPZ návěsu'],['d1','Driver #1','Řidič 1 (jméno)'],['p1','Phone #1','Telefon řidiče 1'],['d2','Driver #2','Řidič 2 (jméno)'],['p2','Phone #2','Telefon řidiče 2'],['s1','Seal #1','Plomba 1 (číslo)'],['s2','Seal #2','Plomba 2 (číslo, může být prázdné)']];
+var ADDR=[['load','Loading address','Adresa nakládky'],['unload','Unloading address','Adresa vykládky']];
+var ALL=FIELDS.concat(ADDR);
+var vals={},flag={},els={},sures={},wraps={};
+ALL.forEach(function(f){vals[f[0]]='';flag[f[0]]=false;});
+var SKEY='rz_details_v1',MAXAGE=48*3600*1000;
+function save(){
+try{
+var any=ALL.some(function(f){return vals[f[0]];})||ta.value.trim();
+if(!any){localStorage.removeItem(SKEY);return;}
+localStorage.setItem(SKEY,JSON.stringify({v:vals,f:flag,t:ta.value,k:ks.value,ts:Date.now()}));
+}catch(e){}
+}
+function load(){
+try{
+var raw=localStorage.getItem(SKEY);if(!raw)return false;
+var o=JSON.parse(raw);
+if(!o||Date.now()-o.ts>MAXAGE){localStorage.removeItem(SKEY);return false;}
+ALL.forEach(function(f){var k=f[0];if(o.v&&o.v[k]){vals[k]=o.v[k];els[k].value=o.v[k];flag[k]=!!(o.f&&o.f[k]);}});
+if(o.t)ta.value=o.t;
+if(o.k)ks.value=o.k;
+return true;
+}catch(e){return false;}
+}
+var det=document.createElement('details');det.className='card';det.open=true;
+det.innerHTML='<summary>Tabulka „Details“ po nakládce</summary><p class="hint">Vlož zprávu s instrukcemi nebo vyfoť vozidlo či plombu. Údaje se doplní samy. Doplněné pole musíš potvrdit, než půjde zkopírovat. Vyplněné údaje se pamatují v tomto telefonu 48 hodin, i když aplikaci zavřeš. Vložený text a fotky se posílají ke zpracování na server (AI) a neukládají se.</p><span class="src">NOVINKA</span>';
+var smart=document.createElement('div');smart.className='smart';det.appendChild(smart);
+var banner=document.createElement('p');banner.className='demo';
+banner.textContent='Text a fotky se posílají ke zpracování (AI). AI se může splést, vždy zkontroluj každé pole.';
+smart.appendChild(banner);
+var lbl=document.createElement('label');lbl.className='fld';lbl.setAttribute('for','src-text');
+lbl.innerHTML='<span>Zpráva s instrukcemi (vlož text)</span>';
+var ta=document.createElement('textarea');ta.id='src-text';ta.placeholder='Vlož sem zprávu od dispečinku';
+ta.addEventListener('input',function(){save();});
+lbl.appendChild(ta);smart.appendChild(lbl);
+var row1=document.createElement('div');row1.className='row';smart.appendChild(row1);
+function mini(text,fn,cls){var b=document.createElement('button');b.type='button';b.className=cls||'mini';b.textContent=text;b.addEventListener('click',fn);return b;}
+var status=document.createElement('p');status.className='status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+function say(t){status.textContent=t;}
+function apply(fields){
+var n=0;
+Object.keys(fields||{}).forEach(function(k){
+var v=String(fields[k]==null?'':fields[k]).trim();
+if(!v||!(k in vals))return;
+vals[k]=v;els[k].value=v;flag[k]=true;n++;
 });
-dpre.innerHTML=dtext(true);det.appendChild(dpre);
-var db=document.createElement('button');db.type='button';db.className='copy';db.textContent='Kopírovat tabulku';db.setAttribute('data-label','Kopírovat tabulku');
-db.addEventListener('click',function(){copyText(dtext(false),db);});det.appendChild(db);
+refresh();return n;
+}
+function api(payload){
+return fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(r){return r.json().catch(function(){return {};}).then(function(j){if(!r.ok)throw new Error(j&&j.error?j.error:'HTTP '+r.status);return j;});});
+}
+function fillFromText(){
+var t=ta.value.trim();
+if(!t){say('Nejdřív vlož text zprávy.');return;}
+say('Zpracovávám…');
+api({mode:'text',text:t}).then(function(res){say('Doplněno polí: '+apply(res.fields)+'. Zkontroluj je.');}).catch(function(e){say('Nepovedlo se: '+e.message+'. Vyplň ručně.');});
+}
+row1.appendChild(mini('Vyplnit z textu',fillFromText,'copy small'));
+var row2=document.createElement('div');row2.className='row';smart.appendChild(row2);
+var kl=document.createElement('label');kl.className='fld grow';kl.setAttribute('for','photo-kind');
+kl.innerHTML='<span>Co fotíš</span>';
+var ks=document.createElement('select');ks.id='photo-kind';
+[['seal','Plomba (číslo)'],['vehicle','Kamion / návěs / SPZ'],['doc','Instrukce (foto zprávy)']].forEach(function(o){var op=document.createElement('option');op.value=o[0];op.textContent=o[1];ks.appendChild(op);});
+ks.addEventListener('change',function(){save();});
+kl.appendChild(ks);row2.appendChild(kl);
+var fb=document.createElement('label');fb.className='filebtn';
+fb.appendChild(document.createTextNode('Vyfotit / nahrát fotku'));
+var fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.setAttribute('capture','environment');fi.id='photo-file';
+fb.appendChild(fi);row2.appendChild(fb);
+function shrink(file){
+return new Promise(function(res,rej){
+var fr=new FileReader();
+fr.onerror=function(){rej(new Error('soubor nejde přečíst'));};
+fr.onload=function(){
+var im=new Image();
+im.onerror=function(){rej(new Error('nejde obrázek'));};
+im.onload=function(){
+var s=Math.min(1,1600/Math.max(im.width,im.height));
+var c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+res(c.toDataURL('image/jpeg',0.85));
+};
+im.src=fr.result;
+};
+fr.readAsDataURL(file);
+});
+}
+fi.addEventListener('change',function(){
+var file=fi.files&&fi.files[0];if(!file)return;
+var kind=ks.value;
+say('Čtu fotku…');
+shrink(file).then(function(img){return api({mode:'photo',kind:kind,slot:(vals.s1&&!flag.s1?'s2':'s1'),image:img});}).then(function(res){say('Doplněno polí: '+apply(res.fields)+'. Zkontroluj je, zvlášť čísla.');}).catch(function(e){say('Nepovedlo se: '+e.message+'. Vyplň ručně.');});
+fi.value='';
+});
+smart.appendChild(status);
+var counter=document.createElement('p');counter.className='counter';counter.setAttribute('aria-live','polite');smart.appendChild(counter);
+function buildGrid(list,cls){
+var g=document.createElement('div');g.className=cls;
+list.forEach(function(f){
+var id='d_'+f[0];
+var l=document.createElement('label');l.className='fld';l.setAttribute('for',id);
+l.innerHTML='<span>'+esc(f[2])+'<br><i style="font-weight:400">'+esc(f[1])+'</i></span>';
+var inp=document.createElement('input');inp.id=id;inp.type=(f[1].indexOf('Phone')===0)?'tel':'text';inp.autocomplete='off';
+inp.addEventListener('input',function(){vals[f[0]]=inp.value;flag[f[0]]=false;refresh();});
+var sb=mini('Sedí ✓',function(){flag[f[0]]=false;refresh();},'mini sure');
+sb.hidden=true;
+l.appendChild(inp);l.appendChild(sb);
+els[f[0]]=inp;sures[f[0]]=sb;wraps[f[0]]=l;g.appendChild(l);
+});
+return g;
+}
+det.appendChild(buildGrid(FIELDS,'fields two'));
+var dpre=document.createElement('pre');dpre.className='pre';
+var db=document.createElement('button');db.type='button';db.className='copy';db.setAttribute('data-label','Kopírovat tabulku');db.textContent='Kopírovat tabulku';
+var hl=document.createElement('h4');hl.className='sub-h';hl.textContent='Adresy (návrh formátu, ověř podle skutečné zprávy)';
+det.appendChild(dpre);det.appendChild(db);det.appendChild(hl);
+det.appendChild(buildGrid(ADDR,'fields'));
+var apre=document.createElement('pre');apre.className='pre';
+var ab=document.createElement('button');ab.type='button';ab.className='copy';ab.setAttribute('data-label','Kopírovat adresy');ab.textContent='Kopírovat adresy';
+det.appendChild(apre);det.appendChild(ab);
+var rb=mini('Vymazat vše (nová jízda)',function(){ALL.forEach(function(f){vals[f[0]]='';flag[f[0]]=false;els[f[0]].value='';});ta.value='';say('Vymazáno.');refresh();});
+det.appendChild(rb);
+function dtext(html){return 'Details:\n'+FIELDS.map(function(r){var v=vals[r[0]];return r[1]+': '+(html?(v?'<mark>'+esc(v)+'</mark>':''):v);}).join('\n');}
+function atext(html){return ADDR.map(function(r){var v=vals[r[0]];return r[1]+': '+(html?(v?'<mark>'+esc(v)+'</mark>':''):v);}).join('\n');}
+function refresh(){
+var n=0;
+ALL.forEach(function(f){var k=f[0];var fl=!!flag[k]&&!!vals[k];if(!vals[k])flag[k]=false;wraps[k].classList.toggle('chk',fl);sures[k].hidden=!fl;if(fl)n++;});
+counter.textContent=n?('K potvrzení: '+n+'. Zkontroluj oranžová pole a klepni na „Sedí“. Číslo plomby a SPZ čti znak po znaku.'):'';
+db.disabled=n>0;ab.disabled=n>0;
+dpre.innerHTML=dtext(true);apre.innerHTML=atext(true);
+save();
+}
+db.addEventListener('click',function(){if(!db.disabled)copyText(dtext(false),db);});
+ab.addEventListener('click',function(){if(!ab.disabled)copyText(atext(false),ab);});
+var restored=load();
+refresh();
+if(restored)say('Vrátil jsem rozpracované údaje z minula.');
 var firstGroup=app.querySelectorAll('.group')[1];
 firstGroup.querySelector('.cards').appendChild(det);
 /* Vysvětlivky */
